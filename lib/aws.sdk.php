@@ -1,11 +1,6 @@
 <?php 
 
 // Location of the AWS SDK
-// - optionally define a different location for localhost and production
-if(IS_LOCALHOST){
-	include_once( realpath("../../") ."/aws_sdk/sdk.class.php");
-} else {
-	include_once( realpath("../../") ."/aws_sdk/sdk.class.php");	
-}
+include_once( SDK. "aws/1.5.6.2/sdk.class.php");
 
 ?>
