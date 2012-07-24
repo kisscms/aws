@@ -18,6 +18,7 @@ class AWS_SimpleDB extends KISS_Model {
 			try {
 				// Instantiate the AmazonSDB class
 				$GLOBALS[ $db_name ] = new AmazonSDB();
+			 	$GLOBALS[ $db_name ]->set_hostname( $GLOBALS['config']["aws"]["simpleDB_host"] );
 			} catch (Exception $e) {
 				die('Connection failed: '.$e );
 			}
