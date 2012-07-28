@@ -1,70 +1,95 @@
 <?php
 /*
 	AWS ORM for KISSCMS
-	Provides a seamless interface to connect KISSCMS with a Simple DB backend
+	Provides a seamless interface to connect KISSCMS with a SimpleDB backend
 	Homepage: http://kisscms.com/plugins
 	Created by Makis Tracend (@tracend)
 */
 
-class AWS_SimpleDB extends KISS_Model {
+class AWS_SimpleDB extends Model {
 
 //===============================================
 // Database Connection
 //===============================================
 	protected function getdbh() {
 		// generate the name prefix
-		$db_name = "aws_sdb";
-		if (!isset($GLOBALS[ $db_name ])) {
+		if (!isset($GLOBALS['db'][ $this->tablename ])) {
 			try {
 				// Instantiate the AmazonSDB class
-				$GLOBALS[ $db_name ] = new AmazonSDB();
-			 	$GLOBALS[ $db_name ]->set_hostname( $GLOBALS['config']["aws"]["simpleDB_host"] );
+				$GLOBALS['db'][ $this->tablename ] = new AmazonSDB();
+			 	$GLOBALS['db'][ $this->tablename ]->set_hostname( $GLOBALS['config']["aws"]["simpleDB_host"] );
 			} catch (Exception $e) {
 				die('Connection failed: '.$e );
 			}
 		}
-		return $GLOBALS[ $db_name ];
-		//return call_user_func($this->dbhfnname, $this->db);
+		return $GLOBALS['db'][ $this->tablename ];
 	}
 
-
+	// DATA
+	
+	function set($key, $val) {
+		if (isset($this->rs[$key]))
+			// SimpleDB doesn't support nested arrays (using JSON instead)
+			$this->rs[$key] = (is_array($val) || is_object($val)) ? json_encode($val) : $val;
+		return $this;
+	}
+	
+	// try to re-instate the array variables
+	function get($key) {
+		if( isset($this->rs[$key]) ){
+			$scalar =  $this->rs[$key];
+			$array = json_decode( $scalar );
+			return ( is_null($array) ) ? $scalar :  $array;
+		} else {
+			return false;
+		}
+	}
+	
+	// REQUESTS
 	//Inserts record into database with a new auto-incremented primary key
 	//If the primary key is empty, then the PK column should have been set to auto increment
 	function create() {
-		$dbh=$this->getdbh();
-		//$pkname=$this->pkname;
-		
-		$response = $dbh->put_attributes( $this->tablename, $this->rs['id'], $this->rs );
+		try {
+			$response = $this->db->put_attributes( $this->tablename, $this->rs['id'], $this->rs );
+		} catch (Exception $e) {
+			die('Caught exception: '.  $e->getMessage() );
+		}
 		// Success?
 		if($response->isOK()){ 
-			//$this->set($pkname, strtotime("now") );
 			return $response;
 		} else { 
 			echo "Error creating your entry";
 		}
 	}
 
-	function retrieve( $key ) {
-		$dbh=$this->getdbh();
-		//$sql = 'SELECT * FROM '.$this->enquote($this->tablename).' WHERE '.$this->enquote($this->pkname).'=?';
-		//$results = $dbh->select( $sql );
-		$select = $dbh->get_attributes($this->tablename, $key );
+	function read( $key ) {
+		$query = "SELECT * FROM ". $this->tablename ." WHERE ". $this->pkname ." like '%". $key . "%'";
+		try {
+			$select = $this->db->select( $query );
+		} catch (Exception $e) {
+			die('Caught exception: '.  $e->getMessage() );
+		}
 		// Get all of the <Item> nodes in the response
-		$result = $this->attrToArray( $select );
-		$rs = array_shift( $result ); // fix to just get one entry
-		//var_dump($rs);
-		if ($rs)
-			foreach ($rs as $key => $val)
-				if (isset($this->rs[$key]))
-					$this->rs[$key] = is_scalar($this->rs[$key]) ? $val : unserialize($this->COMPRESS_ARRAY ? gzinflate($val) : $val);
-					//$this->rs[$key] = $val;
-		return $this;
+		$results = $this->attrToArray( $select );
+		// exit if there's a false request
+		if (!$results) return false;
+		// the result is expected in a one item array
+		$rs = array_shift( $results );
+		
+		$this->merge($rs);
+		/*foreach ($result as $key => $val){ 
+			if (isset($this->rs[$key])){ 
+				//$this->rs[$key] = $val;
+				$this->rs[$key] = is_scalar($this->rs[$key]) ? $val : unserialize($this->COMPRESS_ARRAY ? gzinflate($val) : $val);
+			}
+		}*/
+		return $this;	
+		
 	}
 
 	function update() {
-		$dbh=$this->getdbh();
 		
-		$response = $dbh->put_attributes( $this->tablename, $this->rs['id'], $this->rs, true);
+		$response = $this->db->put_attributes( $this->tablename, $this->rs[$this->pkname], $this->rs, true);
 		// Success?
 		if($response->isOK()){ 
 			return $this;
@@ -74,8 +99,7 @@ class AWS_SimpleDB extends KISS_Model {
 	}
 
 	function delete() {
-		$dbh=$this->getdbh();
-		$response = $dbh->delete_attributes( $this->tablename, $this->rs['id'] );
+		$response = $this->db->delete_attributes( $this->tablename, $this->rs[$this->pkname] );
 		// Success?
 		if($response->isOK()){ 
 			return $this;
@@ -84,6 +108,7 @@ class AWS_SimpleDB extends KISS_Model {
 		}
 	}
 
+
 	//returns true if primary key is a positive integer
 	//if checkdb is set to true, this function will return true if there exists such a record in the database
 	function exists($checkdb=false) {
@@ -91,21 +116,12 @@ class AWS_SimpleDB extends KISS_Model {
 			return false;
 		if (!$checkdb)
 			return true;
-		$dbh=$this->getdbh();
 		$sql = 'SELECT 1 FROM '.$this->enquote($this->tablename).' WHERE '.$this->enquote($this->pkname)."='".$this->rs[$this->pkname]."'";
-		$result = $dbh->query($sql)->fetchAll();
+		$result = $this->db->query($sql)->fetchAll();
 		return count($result);
 	}
-
-	function merge($arr) {
-		if (!is_array($arr))
-			return false;
-		foreach ($arr as $key => $val)
-			if (isset($this->rs[$key]))
-				$this->rs[$key] = $val;
-		return $this;
-	}
-
+	
+	/*
 	function retrieve_one($wherewhat,$bindings) {
 		$dbh=$this->getdbh();
 		if (is_scalar($bindings))
@@ -154,7 +170,7 @@ class AWS_SimpleDB extends KISS_Model {
 		$stmt->execute($bindings);
 		return $stmt->fetchAll($pdo_fetch_mode);
 	}
-	
+	*/
 	
 	function check_table() {
 	
@@ -173,9 +189,7 @@ class AWS_SimpleDB extends KISS_Model {
 
 	function create_table(){
 	
-		$dbh= $this->getdbh();
-		
-		$response = $dbh->create_domain($this->tablename); 
+		$response = $this->db->create_domain($this->tablename); 
 		if ($response->isOK()){
 			return true;
 		} else {
@@ -186,8 +200,7 @@ class AWS_SimpleDB extends KISS_Model {
 	
 	function get_tables(){
 	  
-		$dbh= $this->getdbh();
-		$response = $dbh->list_domains();
+		$response = $this->db->list_domains();
 		if ($response->isOK()){
 			$domains = (array)$response->body->ListDomainsResult;
 			return $domains["DomainName"];
@@ -212,13 +225,22 @@ class AWS_SimpleDB extends KISS_Model {
 		}
 		return $results; 
 	} 
+	
 	function attrToArray($select) { 
 		$results = array(); 
-		$x = 0; 
-		foreach($select->body->GetAttributesResult as $result) { 
+		$x = 0;
+		
+		// stop processing if there are no results
+		if( empty( $select->body->SelectResult ) ) return false;
+		 
+		foreach($select->body->SelectResult->Item as $result) { 
+			
+			//$rs = array_shift( $result ); // fix to remove the id from the array
+		
 			foreach ($result as $field) { 
-				$results[$x][ (string) $field->Name ] = (string) 
-				$field->Value; 
+				$key = (string) $field->Name;
+				$val = (string) $field->Value;
+				if( !empty($key) ) $results[$x][ $key ] = $val; 
 			} 
 			$x++; 
 		} 
