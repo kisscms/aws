@@ -12,17 +12,18 @@ class AWS_SimpleDB extends Model {
 // Database Connection
 //===============================================
 	protected function getdbh() {
+		$name = 'sdb_'. $this->tablename;
 		// generate the name prefix
-		if (!isset($GLOBALS['db'][ $this->tablename ])) {
+		if (!isset($GLOBALS['db'][$name])) {
 			try {
 				// Instantiate the AmazonSDB class
-				$GLOBALS['db'][ $this->tablename ] = new AmazonSDB();
-			 	$GLOBALS['db'][ $this->tablename ]->set_hostname( $GLOBALS['config']["aws"]["simpleDB_host"] );
+				$GLOBALS['db'][$name] = new AmazonSDB();
+			 	$GLOBALS['db'][$name]->set_hostname( $GLOBALS['config']["aws"]["simpleDB_host"] );
 			} catch (Exception $e) {
 				die('Connection failed: '.$e );
 			}
 		}
-		return $GLOBALS['db'][ $this->tablename ];
+		return $GLOBALS['db'][$name];
 	}
 
 
