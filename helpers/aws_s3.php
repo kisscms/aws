@@ -31,11 +31,7 @@ class AWS_S3 extends Model {
 		// trigger the AWS service
 		$response = $this->db->create_object( $this->tablename, $key, $params);
 		// Success?
-		if($response->isOK()){ 
-			return $response;
-		} else { 
-			echo "Error creating your file";
-		}
+		return ($response->isOK()) ? true : false;
 	}
 
 	function read( $key ) {
@@ -46,8 +42,12 @@ class AWS_S3 extends Model {
 		
 	}
 
-	function delete() {
-		
+	function delete( $key=false ) {
+		$id = (!$key) ? $this->rs[$this->pkname] : $key;
+		// trigger the AWS service
+		$response = $this->db->delete_object( $this->tablename, $id );
+		// Success?
+		return ($response->isOK()) ?  true : false;
 	}
 
 
