@@ -62,11 +62,7 @@ class AWS_SimpleDB extends Model {
 			die('Caught exception: '.  $e->getMessage() );
 		}
 		// Success?
-		if($response->isOK()){ 
-			return $response;
-		} else { 
-			echo "Error creating your entry";
-		}
+		return ($response->isOK()) ? true : false;
 	}
 
 	function read( $key ) {
@@ -80,29 +76,21 @@ class AWS_SimpleDB extends Model {
 		
 		$this->merge($rs);
 		
-		return $this;	
-		
+		return $this->getAll();	
 	}
 
 	function update() {
 		
 		$response = $this->db->put_attributes( $this->tablename, $this->rs[$this->pkname], $this->rs, true);
 		// Success?
-		if($response->isOK()){ 
-			return $this;
-		} else { 
-			echo "Error updating your entry";
-		}
+		return ($response->isOK()) ? $this->getAll() : false;
 	}
 
-	function delete() {
-		$response = $this->db->delete_attributes( $this->tablename, $this->rs[$this->pkname] );
+	function delete( $key=false ) {
+		$id = (!$key) ? $this->rs[$this->pkname] : $key;
+		$response = $this->db->delete_attributes( $this->tablename, $id );
 		// Success?
-		if($response->isOK()){ 
-			return $this;
-		} else { 
-			echo "Error deleting your entry";
-		}
+		return ($response->isOK()) ?  true : false;
 	}
 
 
