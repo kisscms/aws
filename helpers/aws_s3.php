@@ -19,8 +19,10 @@ class AWS_S3 extends Model {
 				// Instantiate the AmazonSDB class
 				$GLOBALS['db'][$name] = new AmazonS3();
 			 	$GLOBALS['db'][$name]->set_region( $GLOBALS['config']["aws"]["s3_region"] );
+				// FIX: cURL error (SSL certificate mismatch) for S3 bucket names with multiple dots 
+				$GLOBALS['db'][$name]->path_style = true;
 			} catch (Exception $e) {
-				die('Connection failed: '.$e );
+				die('{ "error": '. json_encode($e->getMessage()) .'}');
 			}
 		}
 		return $GLOBALS['db'][$name];
@@ -29,7 +31,11 @@ class AWS_S3 extends Model {
 
 	function create($key, $params=array()) {
 		// trigger the AWS service
-		$response = $this->db->create_object( $this->tablename, $key, $params);
+		try{
+                $response = $this->db->create_object( $this->tablename, $key, $params);
+        } catch (Exception $e) {
+				die('{ "error": '. json_encode($e->getMessage()) .'}');
+		}
 		// Success?
 		return ($response->isOK()) ? true : false;
 	}
