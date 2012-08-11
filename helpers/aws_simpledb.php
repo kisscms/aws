@@ -178,9 +178,10 @@ class AWS_SimpleDB extends Model {
 		$query = 'SELECT '. $fields .' FROM '.$this->tablename;
 		if ( isset($filters) )
 			$query .= ' WHERE '.$filters;
-			
-		// ...add limits?
 		
+		//add limits
+		if( !empty($params['limit']) )
+			$query .= ' LIMIT '. $params['limit'];
 		
 		$results = $this->select( $query );
 		
