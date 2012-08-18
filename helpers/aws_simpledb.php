@@ -2,7 +2,7 @@
 /*
 	AWS ORM for KISSCMS
 	Provides a seamless interface to connect KISSCMS with a SimpleDB backend
-	Homepage: http://kisscms.com/plugins
+	Source: http://github.com/kisscms/aws
 	Created by Makis Tracend (@tracend)
 */
 
@@ -12,21 +12,24 @@ class AWS_SimpleDB extends Model {
 // Database Connection
 //===============================================
 	protected function getdbh() {
+		$name = 'sdb_'. $this->tablename;
 		// generate the name prefix
-		if (!isset($GLOBALS['db'][ $this->tablename ])) {
+		if (!isset($GLOBALS['db'][$name])) {
 			try {
 				// Instantiate the AmazonSDB class
-				$GLOBALS['db'][ $this->tablename ] = new AmazonSDB();
-			 	$GLOBALS['db'][ $this->tablename ]->set_hostname( $GLOBALS['config']["aws"]["simpleDB_host"] );
+				$GLOBALS['db'][$name] = new AmazonSDB();
+			 	$GLOBALS['db'][$name]->set_hostname( $GLOBALS['config']["aws"]["simpleDB_host"] );
 			} catch (Exception $e) {
 				die('Connection failed: '.$e );
 			}
 		}
-		return $GLOBALS['db'][ $this->tablename ];
+		return $GLOBALS['db'][$name];
 	}
 
-	// DATA
-	
+
+//===============================================
+// Data methods
+//===============================================
 	function set($key, $val) {
 		if (isset($this->rs[$key]))
 			// SimpleDB doesn't support nested arrays (using JSON instead)
@@ -45,133 +48,56 @@ class AWS_SimpleDB extends Model {
 		}
 	}
 	
-	// REQUESTS
-	//Inserts record into database with a new auto-incremented primary key
-	//If the primary key is empty, then the PK column should have been set to auto increment
+
+//===============================================
+// Main Requests
+//===============================================
+
+	// Inserts record into database using the primary key
+	// If the primary key is empty, then the PK column should have been set to auto increment
 	function create() {
 		try {
-			$response = $this->db->put_attributes( $this->tablename, $this->rs['id'], $this->rs );
+			$response = $this->db->put_attributes( $this->tablename, $this->rs[$this->pkname], $this->rs );
 		} catch (Exception $e) {
 			die('Caught exception: '.  $e->getMessage() );
 		}
 		// Success?
-		if($response->isOK()){ 
-			return $response;
-		} else { 
-			echo "Error creating your entry";
-		}
+		return ($response->isOK()) ? true : false;
 	}
 
 	function read( $key ) {
 		$query = "SELECT * FROM ". $this->tablename ." WHERE ". $this->pkname ." like '%". $key . "%'";
-		try {
-			$select = $this->db->select( $query );
-		} catch (Exception $e) {
-			die('Caught exception: '.  $e->getMessage() );
-		}
-		// Get all of the <Item> nodes in the response
-		$results = $this->attrToArray( $select );
-		// exit if there's a false request
-		if (!$results) return false;
+		
+		$results = $this->select( $query );
+		// exit if there're no results
+		if ( empty($results) ) return false;
 		// the result is expected in a one item array
 		$rs = array_shift( $results );
 		
 		$this->merge($rs);
-		/*foreach ($result as $key => $val){ 
-			if (isset($this->rs[$key])){ 
-				//$this->rs[$key] = $val;
-				$this->rs[$key] = is_scalar($this->rs[$key]) ? $val : unserialize($this->COMPRESS_ARRAY ? gzinflate($val) : $val);
-			}
-		}*/
-		return $this;	
 		
+		return $this->getAll();	
 	}
 
 	function update() {
 		
 		$response = $this->db->put_attributes( $this->tablename, $this->rs[$this->pkname], $this->rs, true);
 		// Success?
-		if($response->isOK()){ 
-			return $this;
-		} else { 
-			echo "Error updating your entry";
-		}
+		return ($response->isOK()) ? $this->getAll() : false;
 	}
 
-	function delete() {
-		$response = $this->db->delete_attributes( $this->tablename, $this->rs[$this->pkname] );
+	function delete( $key=false ) {
+		$id = (!$key) ? $this->rs[$this->pkname] : $key;
+		$response = $this->db->delete_attributes( $this->tablename, $id );
 		// Success?
-		if($response->isOK()){ 
-			return $this;
-		} else { 
-			echo "Error deleting your entry";
-		}
+		return ($response->isOK()) ?  true : false;
 	}
 
 
-	//returns true if primary key is a positive integer
-	//if checkdb is set to true, this function will return true if there exists such a record in the database
-	function exists($checkdb=false) {
-		if ((int)$this->rs[$this->pkname] < 1)
-			return false;
-		if (!$checkdb)
-			return true;
-		$sql = 'SELECT 1 FROM '.$this->enquote($this->tablename).' WHERE '.$this->enquote($this->pkname)."='".$this->rs[$this->pkname]."'";
-		$result = $this->db->query($sql)->fetchAll();
-		return count($result);
-	}
-	
-	/*
-	function retrieve_one($wherewhat,$bindings) {
-		$dbh=$this->getdbh();
-		if (is_scalar($bindings))
-			$bindings=$bindings ? array($bindings) : array();
-		$sql = 'SELECT * FROM '.$this->enquote($this->tablename);
-		if (isset($wherewhat) && isset($bindings))
-			$sql .= ' WHERE '.$wherewhat;
-		$sql .= ' LIMIT 1';
-		$stmt = $dbh->prepare($sql);
-		$stmt->execute($bindings);
-		$rs = $stmt->fetch(PDO::FETCH_ASSOC);
-		if (!$rs)
-			return false;
-		foreach ($rs as $key => $val)
-			if (isset($this->rs[$key]))
-				$this->rs[$key] = is_scalar($this->rs[$key]) ? $val : unserialize($this->COMPRESS_ARRAY ? gzinflate($val) : $val);
-		return $this;
-	}
+//===============================================
+// Table functions
+//===============================================
 
-
-	function retrieve_many($wherewhat='',$bindings='') {
-		$dbh=$this->getdbh();
-
-		if (is_scalar($bindings))
-			$bindings=$bindings ? array($bindings) : array();
-		$sql = 'SELECT * FROM '.$this->tablename;
-		if ($wherewhat)
-			$sql .= ' WHERE '.$wherewhat;
-		
-		$select = $dbh->select( $sql );
-		// Get all of the <Item> nodes in the response
-		//$arr = $results->body->SelectResult->to_array()->getArrayCopy();
-		$results = $this->convertSelectToArray($select); // convert AWS object to array 
-
-		return $results;
-	}
-
-	function select($selectwhat='*',$wherewhat='',$bindings='',$pdo_fetch_mode=PDO::FETCH_ASSOC) {
-		$dbh=$this->getdbh();
-		if (is_scalar($bindings))
-			$bindings=$bindings ? array($bindings) : array();
-		$sql = 'SELECT '.$selectwhat.' FROM '.$this->tablename;
-		if ($wherewhat)
-			$sql .= ' WHERE '.$wherewhat;
-		$stmt = $dbh->prepare($sql);
-		$stmt->execute($bindings);
-		return $stmt->fetchAll($pdo_fetch_mode);
-	}
-	*/
-	
 	function check_table() {
 	
 		$tables = $this->get_tables();
@@ -210,41 +136,77 @@ class AWS_SimpleDB extends Model {
 	
 	}
 	
-	/* Helper functions */
-	function convertSelectToArray($select) { 
-		$results = array(); 
-		$x = 0; 
-		if( !empty($select->body->SelectResult) ) {
-			foreach($select->body->SelectResult->Item as $result) { 
-				foreach ($result as $field) { 
-					$results[$x][ (string) $field->Name ] = (string) 
-					$field->Value; 
-				} 
-				$x++; 
-			} 
+	
+//===============================================
+// Helpers methods
+//===============================================
+
+	// General query method
+	function select( $query ){
+		try {
+			$select = $this->db->select( $query );
+			// Get all of the <Item> nodes in the response
+			$results = $this->attrToArray( $select );
+		} catch (Exception $e) {
+			die('Caught exception: '.  $e->getMessage() );
 		}
-		return $results; 
-	} 
+		return (isset($results)) ? $results : NULL;
+	}
+	
+	// Construct a query from the params
+	function query( $params ) {
+		
+		// get fields
+		if( !empty($params['fields']) ){
+			$fields = ( is_scalar($params['fields']) ) ? (string) $params['fields'] : implode(",", $params['fields'] );
+		} else {
+			$fields = "*";
+		}
+		
+		// get filters
+		if( !empty($params['filters']) ){
+			if( is_scalar($params['filters']) ){
+				$filters =  (string) $params['filters'];
+			} else {
+				foreach( $params['filters'] as $k=>$v){
+					$filters[]="$k='$v'";
+				}
+				$filters =  implode(" AND ", $filters);
+			}
+		}
+		
+		$query = 'SELECT '. $fields .' FROM '.$this->tablename;
+		if ( isset($filters) )
+			$query .= ' WHERE '.$filters;
+		
+		//add limits
+		if( !empty($params['limit']) )
+			$query .= ' LIMIT '. $params['limit'];
+		
+		$results = $this->select( $query );
+		
+		return $results;
+	}
+	
 	
 	function attrToArray($select) { 
 		$results = array(); 
-		$x = 0;
 		
 		// stop processing if there are no results
-		if( empty( $select->body->SelectResult ) ) return false;
-		 
-		foreach($select->body->SelectResult->Item as $result) { 
-			
-			//$rs = array_shift( $result ); // fix to remove the id from the array
-		
-			foreach ($result as $field) { 
-				$key = (string) $field->Name;
-				$val = (string) $field->Value;
-				if( !empty($key) ) $results[$x][ $key ] = $val; 
+		if( !empty($select->body->SelectResult) ) { 
+			foreach($select->body->SelectResult->Item as $item) { 
+				$result = array();
+				foreach ($item as $field) { 
+					$name = (string) $field->Name;
+					$value = (string) $field->Value;
+					if( !empty($name) ) $result[$name] = $value;
+				} 
+				$results[]=$result;
 			} 
-			$x++; 
-		} 
+		}
+		
 		return $results; 
 	}
 
 }
+?>
