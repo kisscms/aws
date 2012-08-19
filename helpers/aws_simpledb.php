@@ -179,6 +179,10 @@ class AWS_SimpleDB extends Model {
 		if ( isset($filters) )
 			$query .= ' WHERE '.$filters;
 		
+		// add order
+		if( !empty($params['order']) )
+			$query .= ' ORDER BY '. $params['order']['field'] .' '. $params['order']['direction'];
+		
 		//add limits
 		if( !empty($params['limit']) )
 			$query .= ' LIMIT '. $params['limit'];
