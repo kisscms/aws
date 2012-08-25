@@ -41,7 +41,14 @@ class AWS_S3 extends Model {
 	}
 
 	function read( $key ) {
-		
+		// trigger the AWS service
+		try{
+                $response = $this->db->get_object( $this->tablename, $key);
+        } catch (Exception $e) {
+				die('{ "error": '. json_encode($e->getMessage()) .'}');
+		}
+		// Success?
+		return ($response->isOK()) ? true : false;
 	}
 
 	function update() {
