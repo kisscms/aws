@@ -47,6 +47,8 @@ class AWS_S3 extends Model {
         } catch (Exception $e) {
 				die('{ "error": '. json_encode($e->getMessage()) .'}');
 		}
+		// save the object
+		$this->set("body", $response->body);
 		// Success?
 		return ($response->isOK()) ? true : false;
 	}
