@@ -42,7 +42,8 @@ class AWS_SimpleDB extends Model {
 		if( isset($this->rs[$key]) ){
 			$scalar =  $this->rs[$key];
 			$array = json_decode( $scalar );
-			return ( is_null($array) ) ? $scalar :  $array;
+			// #1 FIX : better decoding of db value
+			return ( is_object( $array ) || is_array( $array ) ) ? $array : $scalar;
 		} else {
 			return false;
 		}
