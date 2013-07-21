@@ -14,6 +14,9 @@ class AWS_SimpleDB extends Model {
 			$this->rs['updated'] = '';
 			$this->rs['created'] = '';
 		}
+		if( !empty( $GLOBALS['config']['aws']['simpleDB_soft_delete'] ) ){
+			$this->rs['_archive'] = 0;
+		}
 		parent::__construct( $db, $pkname, $tablename);
 
 	}
@@ -83,7 +86,9 @@ class AWS_SimpleDB extends Model {
 
 	function read( $key ) {
 		$query = "SELECT * FROM ". $this->tablename ." WHERE ". $this->pkname ." like '%". $key . "%'";
-
+		if( !empty( $GLOBALS['config']['aws']['simpleDB_soft_delete'] ) ){
+			$query .= " AND _archive='0'";
+		}
 		$results = $this->select( $query );
 		// exit if there're no results
 		if ( empty($results) ) return false;
@@ -106,10 +111,15 @@ class AWS_SimpleDB extends Model {
 	}
 
 	function delete( $key=false ) {
-		$id = (!$key) ? $this->rs[$this->pkname] : $key;
-		$response = $this->db->delete_attributes( $this->tablename, $id );
-		// Success?
-		return ($response->isOK()) ?  true : false;
+		if( !empty( $GLOBALS['config']['aws']['simpleDB_soft_delete'] ) ){
+			$this->rs['_archive'] = 1;
+			return $this->update();
+		} else {
+			$id = (!$key) ? $this->rs[$this->pkname] : $key;
+			$response = $this->db->delete_attributes( $this->tablename, $id );
+			// Success?
+			return ($response->isOK()) ?  true : false;
+		}
 	}
 
 
