@@ -18,8 +18,8 @@ class AWS_S3 extends Model {
 			try {
 				// Instantiate the AmazonSDB class
 				$GLOBALS['db'][$name] = new AmazonS3();
-			 	$GLOBALS['db'][$name]->set_region( $GLOBALS['config']["aws"]["s3_region"] );
-				// FIX: cURL error (SSL certificate mismatch) for S3 bucket names with multiple dots 
+				$GLOBALS['db'][$name]->set_region( $GLOBALS['config']["aws"]["s3_region"] );
+				// FIX: cURL error (SSL certificate mismatch) for S3 bucket names with multiple dots
 				$GLOBALS['db'][$name]->path_style = true;
 			} catch (Exception $e) {
 				die('{ "error": '. json_encode($e->getMessage()) .'}');
@@ -32,8 +32,8 @@ class AWS_S3 extends Model {
 	function create($key, $params=array()) {
 		// trigger the AWS service
 		try{
-                $response = $this->db->create_object( $this->tablename, $key, $params);
-        } catch (Exception $e) {
+				$response = $this->db->create_object( $this->tablename, $key, $params);
+		} catch (Exception $e) {
 				die('{ "error": '. json_encode($e->getMessage()) .'}');
 		}
 		// Success?
@@ -43,8 +43,8 @@ class AWS_S3 extends Model {
 	function read( $key ) {
 		// trigger the AWS service
 		try{
-                $response = $this->db->get_object( $this->tablename, $key);
-        } catch (Exception $e) {
+				$response = $this->db->get_object( $this->tablename, $key);
+		} catch (Exception $e) {
 				die('{ "error": '. json_encode($e->getMessage()) .'}');
 		}
 		// save the object
@@ -54,7 +54,7 @@ class AWS_S3 extends Model {
 	}
 
 	function update() {
-		
+
 	}
 
 	function delete( $key=false ) {
