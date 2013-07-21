@@ -8,6 +8,16 @@
 
 class AWS_SimpleDB extends Model {
 
+	function __construct($db='', $pkname='', $tablename='') {
+		// optionally set timestamp fields
+		if( !empty( $GLOBALS['config']['aws']['simpleDB_timestamps'] ) ){
+			$this->rs['updated'] = '';
+			$this->rs['created'] = '';
+		}
+		parent::__construct( $db, $pkname, $tablename);
+
+	}
+
 //===============================================
 // Database Connection
 //===============================================
@@ -36,7 +46,7 @@ class AWS_SimpleDB extends Model {
 			$this->rs[$key] = (is_array($val) || is_object($val)) ? json_encode($val) : $val;
 		return $this;
 	}
-	
+
 	// try to re-instate the array variables
 	function get($key) {
 		if( isset($this->rs[$key]) ){
@@ -48,7 +58,7 @@ class AWS_SimpleDB extends Model {
 			return false;
 		}
 	}
-	
+
 
 //===============================================
 // Main Requests
@@ -57,6 +67,11 @@ class AWS_SimpleDB extends Model {
 	// Inserts record into database using the primary key
 	// If the primary key is empty, then the PK column should have been set to auto increment
 	function create() {
+		// update timestamps
+		if( !empty( $GLOBALS['config']['aws']['simpleDB_timestamps'] ) ){
+			$this->rs['created'] = $_SERVER['REQUEST_TIME'];
+			$this->rs['updated'] = $_SERVER['REQUEST_TIME'];
+		}
 		try {
 			$response = $this->db->put_attributes( $this->tablename, $this->rs[$this->pkname], $this->rs );
 		} catch (Exception $e) {
@@ -68,20 +83,23 @@ class AWS_SimpleDB extends Model {
 
 	function read( $key ) {
 		$query = "SELECT * FROM ". $this->tablename ." WHERE ". $this->pkname ." like '%". $key . "%'";
-		
+
 		$results = $this->select( $query );
 		// exit if there're no results
 		if ( empty($results) ) return false;
 		// the result is expected in a one item array
 		$rs = array_shift( $results );
-		
+
 		$this->merge($rs);
-		
-		return $this->getAll();	
+
+		return $this->getAll();
 	}
 
 	function update() {
-		
+		// update timestamps
+		if( !empty( $GLOBALS['config']['aws']['simpleDB_timestamps'] ) ){
+			$this->rs['updated'] = $_SERVER['REQUEST_TIME'];
+		}
 		$response = $this->db->put_attributes( $this->tablename, $this->rs[$this->pkname], $this->rs, true);
 		// Success?
 		return ($response->isOK()) ? $this->getAll() : false;
@@ -100,44 +118,44 @@ class AWS_SimpleDB extends Model {
 //===============================================
 
 	function check_table() {
-	
+
 		$tables = $this->get_tables();
 
-		if( !in_array($this->tablename, $tables) ){ 
+		if( !in_array($this->tablename, $tables) ){
 			// create the domain
 			$table = $this->create_table();
-			if( !$table ){ 
+			if( !$table ){
 				die("Could not connect to the data");
 			}
 		}
-		
+
 	}
-	
+
 
 	function create_table(){
-	
-		$response = $this->db->create_domain($this->tablename); 
+
+		$response = $this->db->create_domain($this->tablename);
 		if ($response->isOK()){
 			return true;
 		} else {
 			return false;
 		}
-	
+
 	}
-	
+
 	function get_tables(){
-	  
+
 		$response = $this->db->list_domains();
 		if ($response->isOK()){
 			$domains = (array)$response->body->ListDomainsResult;
 			return $domains["DomainName"];
 		} else {
-			return false;		
+			return false;
 		}
-	
+
 	}
-	
-	
+
+
 //===============================================
 // Helpers methods
 //===============================================
@@ -153,17 +171,17 @@ class AWS_SimpleDB extends Model {
 		}
 		return (isset($results)) ? $results : NULL;
 	}
-	
+
 	// Construct a query from the params
 	function query( $params ) {
-		
+
 		// get fields
 		if( !empty($params['fields']) ){
 			$fields = ( is_scalar($params['fields']) ) ? (string) $params['fields'] : implode(",", $params['fields'] );
 		} else {
 			$fields = "*";
 		}
-		
+
 		// get filters
 		if( !empty($params['filters']) ){
 			if( is_scalar($params['filters']) ){
@@ -175,42 +193,42 @@ class AWS_SimpleDB extends Model {
 				$filters =  implode(" AND ", $filters);
 			}
 		}
-		
+
 		$query = 'SELECT '. $fields .' FROM '.$this->tablename;
 		if ( isset($filters) )
 			$query .= ' WHERE '.$filters;
-		
+
 		// add order
 		if( !empty($params['order']) )
 			$query .= ' ORDER BY '. $params['order']['field'] .' '. $params['order']['direction'];
-		
+
 		//add limits
 		if( !empty($params['limit']) )
 			$query .= ' LIMIT '. $params['limit'];
-		
+
 		$results = $this->select( $query );
-		
+
 		return $results;
 	}
-	
-	
-	function attrToArray($select) { 
-		$results = array(); 
-		
+
+
+	function attrToArray($select) {
+		$results = array();
+
 		// stop processing if there are no results
-		if( !empty($select->body->SelectResult) ) { 
-			foreach($select->body->SelectResult->Item as $item) { 
+		if( !empty($select->body->SelectResult) ) {
+			foreach($select->body->SelectResult->Item as $item) {
 				$result = array();
-				foreach ($item as $field) { 
+				foreach ($item as $field) {
 					$name = (string) $field->Name;
 					$value = (string) $field->Value;
 					if( !empty($name) ) $result[$name] = $value;
-				} 
+				}
 				$results[]=$result;
-			} 
+			}
 		}
-		
-		return $results; 
+
+		return $results;
 	}
 
 }
