@@ -203,6 +203,10 @@ class AWS_SimpleDB extends Model {
 				$filters =  implode(" AND ", $filters);
 			}
 		}
+		// escape archived items
+		if( !empty( $GLOBALS['config']['aws']['simpleDB_soft_delete'] ) ){
+			$filters .= " AND _archive='0'";
+		}
 
 		$query = 'SELECT '. $fields .' FROM '.$this->tablename;
 		if ( isset($filters) )
