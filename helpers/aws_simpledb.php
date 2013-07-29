@@ -195,7 +195,7 @@ class AWS_SimpleDB extends Model {
 		// get filters
 		if( !empty($params['filters']) ){
 			if( is_scalar($params['filters']) ){
-				$filters =  (string) $params['filters'];
+				$filters = (string) $params['filters'];
 			} else {
 				foreach( $params['filters'] as $k=>$v){
 					$filters[]="$k='$v'";
@@ -213,8 +213,14 @@ class AWS_SimpleDB extends Model {
 			$query .= ' WHERE '.$filters;
 
 		// add order
-		if( !empty($params['order']) )
-			$query .= ' ORDER BY '. $params['order']['field'] .' '. $params['order']['direction'];
+		if( !empty($params['order']) ){
+			if( is_scalar($params['order']) ){
+				$order .= (string) $params['order'];
+			} else {
+				$order .= $params['order']['field'] .' '. $params['order']['direction'];
+			}
+			$query .= ' ORDER BY '. $order;
+		}
 
 		//add limits
 		if( !empty($params['limit']) )
