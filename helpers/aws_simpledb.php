@@ -215,9 +215,9 @@ class AWS_SimpleDB extends Model {
 		// add order
 		if( !empty($params['order']) ){
 			if( is_scalar($params['order']) ){
-				$order .= (string) $params['order'];
+				$order = (string) $params['order'];
 			} else {
-				$order .= $params['order']['field'] .' '. $params['order']['direction'];
+				$order = $params['order']['field'] .' '. $params['order']['direction'];
 			}
 			$query .= ' ORDER BY '. $order;
 		}
