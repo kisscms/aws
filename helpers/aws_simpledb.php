@@ -72,13 +72,16 @@ class AWS_SimpleDB extends Model {
 	function create() {
 		// update timestamps
 		if( !empty( $GLOBALS['config']['aws']['simpleDB_timestamps'] ) ){
-			$this->rs['created'] = $_SERVER['REQUEST_TIME'];
-			$this->rs['updated'] = $_SERVER['REQUEST_TIME'];
+			$timestamp = (string) $_SERVER['REQUEST_TIME'];
+			// #5 include microseconds when calculating REQUEST_TIME in PHP < 5.4
+			if( strlen($timestamp) == 10 ) $timestamp .= "000";
+			$this->rs['created'] = $timestamp;
+			$this->rs['updated'] = $timestamp;
 		}
 		try {
 			$response = $this->db->put_attributes( $this->tablename, $this->rs[$this->pkname], $this->rs );
 		} catch (Exception $e) {
-			die('Caught exception: '.  $e->getMessage() );
+			die('Caught exception: '. $e->getMessage() );
 		}
 		// Success?
 		return ($response->isOK()) ? true : false;
@@ -103,7 +106,10 @@ class AWS_SimpleDB extends Model {
 	function update() {
 		// update timestamps
 		if( !empty( $GLOBALS['config']['aws']['simpleDB_timestamps'] ) ){
-			$this->rs['updated'] = $_SERVER['REQUEST_TIME'];
+			$timestamp = (string) $_SERVER['REQUEST_TIME'];
+			// #5 include microseconds when calculating REQUEST_TIME in PHP < 5.4
+			if( strlen($timestamp) == 10 ) $timestamp .= "000";
+			$this->rs['updated'] = $timestamp;
 		}
 		$response = $this->db->put_attributes( $this->tablename, $this->rs[$this->pkname], $this->rs, true);
 		// Success?
