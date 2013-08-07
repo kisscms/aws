@@ -5,6 +5,7 @@
 	Source: http://github.com/kisscms/aws
 	Created by Makis Tracend (@tracend)
 */
+if(!class_exists('AWS_SimpleDB') ){
 
 class AWS_SimpleDB extends Model {
 
@@ -257,5 +258,6 @@ class AWS_SimpleDB extends Model {
 		return $results;
 	}
 
+}
 }
 ?>

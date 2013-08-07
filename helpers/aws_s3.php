@@ -1,10 +1,11 @@
 <?php
 /*
 	AWS ORM for KISSCMS
-	Provides a seamless interface to connect KISSCMS with a Simple DB backend
-	Homepage: http://kisscms.com/plugins
+	Provides a seamless interface to connect KISSCMS with a SimpleDB backend
+	Source: http://github.com/kisscms/aws
 	Created by Makis Tracend (@tracend)
 */
+if(!class_exists('AWS_S3') ){
 
 class AWS_S3 extends Model {
 
@@ -67,3 +68,6 @@ class AWS_S3 extends Model {
 
 
 }
+}
+
+?>
