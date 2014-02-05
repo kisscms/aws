@@ -73,9 +73,8 @@ class AWS_SimpleDB extends Model {
 	function create() {
 		// update timestamps
 		if( !empty( $GLOBALS['config']['aws']['simpleDB_timestamps'] ) ){
-			$timestamp = (string) $_SERVER['REQUEST_TIME'];
-			// #5 include microseconds when calculating REQUEST_TIME in PHP < 5.4
-			if( strlen($timestamp) == 10 ) $timestamp .= "000";
+			// timestamp() global available at KISSCMS > 2.0
+			$timestamp = timestamp();
 			$this->rs['created'] = $timestamp;
 			$this->rs['updated'] = $timestamp;
 		}
@@ -107,10 +106,8 @@ class AWS_SimpleDB extends Model {
 	function update() {
 		// update timestamps
 		if( !empty( $GLOBALS['config']['aws']['simpleDB_timestamps'] ) ){
-			$timestamp = (string) $_SERVER['REQUEST_TIME'];
-			// #5 include microseconds when calculating REQUEST_TIME in PHP < 5.4
-			if( strlen($timestamp) == 10 ) $timestamp .= "000";
-			$this->rs['updated'] = $timestamp;
+			// timestamp() global available at KISSCMS > 2.0
+			$this->rs['updated'] = timestamp();
 		}
 		$response = $this->db->put_attributes( $this->tablename, $this->rs[$this->pkname], $this->rs, true);
 		// Success?
