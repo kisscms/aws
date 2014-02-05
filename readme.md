@@ -1,9 +1,11 @@
 # AWS plugin for KISSCMS
 
-Simple CRUD methods using [AWS](http://aws.amazon.com/) for [KISSCMS](http://kisscms.com/)
+Simple CRUD methods for [AWS](http://aws.amazon.com/) for [KISSCMS](http://kisscms.com/)
 
-Currently supports the AWS PHP SDK v1.5.6.2
+## Dependencies
 
+* [AWS PHP SDK v2.5.2](https://github.com/aws/aws-sdk-php/releases/tag/2.5.2)
+* [KISSCMS](https://github.com/makesites/kisscms) >= 2.1.0
 
 ## Install
 
