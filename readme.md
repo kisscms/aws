@@ -1,6 +1,6 @@
 # AWS plugin for KISSCMS
 
-Simple CRUD methods for [AWS](http://aws.amazon.com/) for [KISSCMS](http://kisscms.com/)
+Simple CRUD methods to [AWS](http://aws.amazon.com/) for [KISSCMS](http://kisscms.com/)
 
 ## Dependencies
 
