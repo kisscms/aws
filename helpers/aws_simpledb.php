@@ -18,6 +18,7 @@ class AWS_SimpleDB extends Model {
 		if( !empty( $GLOBALS['config']['aws']['simpleDB_soft_delete'] ) ){
 			$this->rs['_archive'] = 0;
 		}
+		$db = $this->getdbh($tablename);
 		parent::__construct( $db, $pkname, $tablename);
 
 	}
@@ -25,19 +26,24 @@ class AWS_SimpleDB extends Model {
 //===============================================
 // Database Connection
 //===============================================
-	protected function getdbh() {
-		$name = 'sdb_'. $this->tablename;
+	protected function getdbh( $tablename="" ) {
 		// generate the name prefix
-		if (!isset($GLOBALS['db'][$name])) {
+		$name = 'sdb_'. $tablename; //$this->tablename
+		//precaution...
+		if( !array_key_exists('db', $GLOBALS) ) $GLOBALS['db'] = array();
+		//
+		if ( !isset($GLOBALS['db'][$name]) && isset($GLOBALS['api']['aws']) ) {
 			try {
-				// Instantiate the AmazonSDB class
-				$GLOBALS['db'][$name] = new AmazonSDB();
-			 	$GLOBALS['db'][$name]->set_hostname( $GLOBALS['config']["aws"]["simpleDB_host"] );
+				// LEGACY: Instantiate the AmazonSDB class
+				//$GLOBALS['db'][$name] = new AmazonSDB();
+				//$GLOBALS['db'][$name]->set_hostname( $GLOBALS['config']["aws"]["simpleDB_host"] );
+				$GLOBALS['db'][$name] = $GLOBALS['api']['aws']->get('sdb');
 			} catch (Exception $e) {
 				die('Connection failed: '.$e );
 			}
 		}
-		return $GLOBALS['db'][$name];
+
+		return ( isset($GLOBALS['db'][$name]) ) ? $GLOBALS['db'][$name] : null;
 	}
 
 
@@ -79,12 +85,20 @@ class AWS_SimpleDB extends Model {
 			$this->rs['updated'] = $timestamp;
 		}
 		try {
-			$response = $this->db->put_attributes( $this->tablename, $this->rs[$this->pkname], $this->rs );
+			//$response = $this->db->put_attributes( $this->tablename, $this->rs[$this->pkname], $this->rs );
+			 $response = $this->db->putAttributes(array(
+				// DomainName is required
+				'DomainName' => $this->tablename,
+				// ItemName is required
+				'ItemName' => $this->rs[$this->pkname],
+				// Attributes is required
+				'Attributes' => $this->getAttributes()
+			));
 		} catch (Exception $e) {
 			die('Caught exception: '. $e->getMessage() );
 		}
 		// Success?
-		return ($response->isOK()) ? true : false;
+		return ( isset($response) ) ? true : false;
 	}
 
 	function read( $key ) {
@@ -109,9 +123,21 @@ class AWS_SimpleDB extends Model {
 			// timestamp() global available at KISSCMS > 2.0
 			$this->rs['updated'] = timestamp();
 		}
-		$response = $this->db->put_attributes( $this->tablename, $this->rs[$this->pkname], $this->rs, true);
+		try {
+			//$response = $this->db->put_attributes( $this->tablename, $this->rs[$this->pkname], $this->rs, true);
+			$response = $this->db->putAttributes(array(
+				// DomainName is required
+				'DomainName' => $this->tablename,
+				// ItemName is required
+				'ItemName' => $this->rs[$this->pkname],
+				// Attributes is required
+				'Attributes' => $this->getAttributes()
+			));
+		} catch (Exception $e) {
+			die('Caught exception: '. $e->getMessage() );
+		}
 		// Success?
-		return ($response->isOK()) ? $this->getAll() : false;
+		return ( isset($response) ) ? $this->getAll() : false;
 	}
 
 	function delete( $key=false ) {
@@ -120,9 +146,21 @@ class AWS_SimpleDB extends Model {
 			return $this->update();
 		} else {
 			$id = (!$key) ? $this->rs[$this->pkname] : $key;
-			$response = $this->db->delete_attributes( $this->tablename, $id );
+			try{
+				// Legacy request
+				//$response = $this->db->delete_attributes( $this->tablename, $id );
+				$response = $this->db->deleteAttributes(array(
+					// DomainName is required
+					'DomainName' => $this->tablename,
+					// ItemName is required
+					'ItemName' => $id,
+					'Attributes' => $this->getAttributes()
+				));
+			} catch (Exception $e) {
+					die('{ "error": '. json_encode($e->getMessage()) .'}');
+			}
 			// Success?
-			return ($response->isOK()) ?  true : false;
+			return ( isset($response) ) ?  true : false;
 		}
 	}
 
@@ -177,9 +215,13 @@ class AWS_SimpleDB extends Model {
 	// General query method
 	function select( $query ){
 		try {
-			$select = $this->db->select( $query );
+			$select = $this->db->select( array(
+				"SelectExpression" => $query
+				//'NextToken' => '',
+				//'ConsistentRead' => true || false,
+			));
 			// Get all of the <Item> nodes in the response
-			$results = $this->attrToArray( $select );
+			$results = $this->normalArray( $select->toArray() );
 		} catch (Exception $e) {
 			die('Caught exception: '.  $e->getMessage() );
 		}
@@ -236,23 +278,39 @@ class AWS_SimpleDB extends Model {
 	}
 
 
-	function attrToArray($select) {
+	function normalArray($select) {
 		$results = array();
 
 		// stop processing if there are no results
-		if( !empty($select->body->SelectResult) ) {
-			foreach($select->body->SelectResult->Item as $item) {
+		//if( !empty($select->body->SelectResult) ) {
+		//	foreach($select->body->SelectResult->Item as $item) {
+		if( isset($select["Items"]) ) {
+			foreach($select["Items"] as $k => $item) {
 				$result = array();
-				foreach ($item as $field) {
-					$name = (string) $field->Name;
-					$value = (string) $field->Value;
+				foreach ($item['Attributes'] as $k => $field) {
+					$name = $field["Name"];
+					$value = ( empty($field["Value"]) ) ? "" : $field["Value"]; // empty arrays are replaced with empty strings
 					if( !empty($name) ) $result[$name] = $value;
 				}
 				$results[]=$result;
 			}
 		}
-
 		return $results;
+	}
+
+	function getAttributes(){
+		$attr = array();
+		//
+		foreach($this->rs as $k=>$v){
+			$attr[] = array(
+				// Name is required
+				'Name' => $k,
+				// Value is required
+				'Value' => (string) $v, // better conversion to string (conditions)
+				'Replace' => true, // make this a config option?
+			);
+		}
+		return $attr;
 	}
 
 }
