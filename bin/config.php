@@ -1,5 +1,7 @@
 <?php
 
+// AWS SDK namespace
+use Aws\Common\Aws;
 
 //===============================================
 // Configuration
@@ -16,6 +18,21 @@ if( class_exists('Config') && method_exists(new Config(),'register')){
 	Config::register("aws", "simpleDB_soft_delete", "1");
 	Config::register("aws", "s3_region", "s3.amazonaws.com");
 
+if( !array_key_exists("api", $GLOBALS) ) $GLOBALS['api'] = array();
+
+	// setup AWS (only once)
+	if( !isset($GLOBALS['api']['aws']) ){
+
+		try{
+			$GLOBALS['api']['aws'] = Aws::factory(array(
+				'key'    => $GLOBALS['config']['aws']['key'],
+				'secret' => $GLOBALS['config']['aws']['secret'],
+				'region' => $GLOBALS['config']['aws']['region'],
+			));
+		} catch( Exception $e ) {
+			// output error...
+		}
+	}
 }
 
 ?>
