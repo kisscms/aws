@@ -196,6 +196,7 @@ class AWS_SimpleDB extends Model {
 		// exit if there're no results
 		if ( empty($results) ) return false;
 		// the result is expected in a one item array
+		// Why not use LIMIT 1 in the query instead?
 		$rs = array_shift( $results );
 
 		$this->merge($rs);
