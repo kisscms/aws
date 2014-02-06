@@ -71,7 +71,7 @@ class AWS_SimpleDB extends Model {
 
 
 //===============================================
-// Main Requests
+// CRUD Requests
 //===============================================
 
 	// Inserts record into database using the primary key
@@ -83,6 +83,10 @@ class AWS_SimpleDB extends Model {
 			$timestamp = timestamp();
 			$this->rs['created'] = $timestamp;
 			$this->rs['updated'] = $timestamp;
+		}
+		// do I really need to condition this?
+		if( !empty( $GLOBALS['config']['aws']['simpleDB_soft_delete'] ) ){
+			$this->rs['_archive'] = 0;
 		}
 		try {
 			//$response = $this->db->put_attributes( $this->tablename, $this->rs[$this->pkname], $this->rs );
@@ -166,6 +170,41 @@ class AWS_SimpleDB extends Model {
 
 
 //===============================================
+// Query methods
+//===============================================
+
+	// run a lookup query based on a field
+	function find($key= false, $value=false){
+		//prerequisites
+		if(!$key || !$value) return null;
+		// variables
+		$filter = "";
+		if( is_scalar( $value ) ){
+			$filter = ( strpos($value, '%') !== FALSE ) ? $key ." LIKE '". $value ."'" : $key ."='". $value ."'";
+		} else {
+			// assume array?
+			$filters = array();
+			foreach( $value as $v ){
+				$filters[] = $key ." LIKE '%". $v ."%'";
+			}
+			$filter = implode(" AND ", $filters);
+		}
+		// execute query
+		$results = $this->query( array(
+			"filters" => $filter
+		));
+		// exit if there're no results
+		if ( empty($results) ) return false;
+		// the result is expected in a one item array
+		$rs = array_shift( $results );
+
+		$this->merge($rs);
+
+		return $this->getAll();
+	}
+
+
+//===============================================
 // Table functions
 //===============================================
 
@@ -214,6 +253,7 @@ class AWS_SimpleDB extends Model {
 
 	// General query method
 	function select( $query ){
+
 		try {
 			$select = $this->db->select( array(
 				"SelectExpression" => $query
@@ -276,7 +316,6 @@ class AWS_SimpleDB extends Model {
 
 		return $results;
 	}
-
 
 	function normalArray($select) {
 		$results = array();
