@@ -174,7 +174,7 @@ class AWS_SimpleDB extends Model {
 //===============================================
 
 	// run a lookup query based on a field
-	function find($key= false, $value=false){
+	function findOne($key= false, $value=false){
 		//prerequisites
 		if(!$key || !$value) return null;
 		// variables
