@@ -85,9 +85,9 @@ class AWS_SimpleDB extends Model {
 			$this->rs['updated'] = $timestamp;
 		}
 		// do I really need to condition this?
-		//if( !empty( $GLOBALS['config']['aws']['simpleDB_soft_delete'] ) ){
+		if( !empty( $GLOBALS['config']['aws']['simpleDB_soft_delete'] ) ){
 			$this->rs['_archive'] = 0;
-		//}
+		}
 		try {
 			//$response = $this->db->put_attributes( $this->tablename, $this->rs[$this->pkname], $this->rs );
 			 $response = $this->db->putAttributes(array(
@@ -346,11 +346,23 @@ class AWS_SimpleDB extends Model {
 				// Name is required
 				'Name' => $k,
 				// Value is required
-				'Value' => (string) $v, // better conversion to string (conditions)
+				'Value' => $this->stringify( $v ), // better conversion to string (conditions)
 				'Replace' => true, // make this a config option?
 			);
 		}
 		return $attr;
+	}
+
+	function stringify( $value="" ){
+		// if the value is false save as an integer
+		if( !$value ){
+			return 0;
+		} else {
+			// for all other cases simple conversion seems to work
+			// consider json_encode?
+			return (string) $value;
+		}
+
 	}
 
 }
