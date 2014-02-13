@@ -84,10 +84,10 @@ class AWS_SimpleDB extends Model {
 			$this->rs['created'] = $timestamp;
 			$this->rs['updated'] = $timestamp;
 		}
-		// do I really need to condition this?
-		if( !empty( $GLOBALS['config']['aws']['simpleDB_soft_delete'] ) ){
+		// creating the archive flag regardless, in case the "soft delete" option changes in the future
+		//if( !empty( $GLOBALS['config']['aws']['simpleDB_soft_delete'] ) ){
 			$this->rs['_archive'] = 0;
-		}
+		//}
 		try {
 			//$response = $this->db->put_attributes( $this->tablename, $this->rs[$this->pkname], $this->rs );
 			 $response = $this->db->putAttributes(array(
