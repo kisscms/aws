@@ -328,9 +328,17 @@ class AWS_SimpleDB extends Model {
 			foreach($select["Items"] as $k => $item) {
 				$result = array();
 				foreach ($item['Attributes'] as $k => $field) {
+
 					$name = $field["Name"];
-					$value = ( empty($field["Value"]) ) ? "" : $field["Value"]; // empty arrays are replaced with empty strings
+					// preserve boolean
+					if( $field["Value"] === false || $field["Value"] === 0 || $field["Value"] === "0" ) {
+						$value = 0; // use false instead?
+					} else {
+						$value = ( empty($field["Value"]) ) ? "" : $field["Value"]; // empty arrays are replaced with empty strings
+					}
+
 					if( !empty($name) ) $result[$name] = $value;
+
 				}
 				$results[]=$result;
 			}
