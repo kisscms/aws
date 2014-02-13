@@ -355,7 +355,7 @@ class AWS_SimpleDB extends Model {
 
 	function stringify( $value="" ){
 		// if the value is false save as an integer
-		if( !$value ){
+		if( $value === false || $value === 0 ){
 			return 0;
 		} else {
 			// for all other cases simple conversion seems to work
