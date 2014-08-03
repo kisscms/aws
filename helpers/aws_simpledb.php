@@ -280,23 +280,27 @@ class AWS_SimpleDB extends Model {
 		}
 
 		// get filters
-		if( !empty($params['filters']) ){
+		$filters = array();
+		if( array_key_exists('filters', $params) ){
 			if( is_scalar($params['filters']) ){
-				$filters = (string) $params['filters'];
+				$filters[] = (string) $params['filters'];
 			} else {
 				foreach( $params['filters'] as $k=>$v){
 					$filters[]="$k='$v'";
 				}
-				$filters =  implode(" AND ", $filters);
 			}
 		}
+
 		// escape archived items
 		if( !empty( $GLOBALS['config']['aws']['simpleDB_soft_delete'] ) ){
-			$filters .= " AND _archive='0'";
+			$filters[] = "_archive='0'";
 		}
 
+		// create one string from all the filters
+		$filters =  implode(" AND ", $filters);
+
 		$query = 'SELECT '. $fields .' FROM '.$this->tablename;
-		if ( isset($filters) )
+		if ( !empty($filters) )
 			$query .= ' WHERE '.$filters;
 
 		// add order
