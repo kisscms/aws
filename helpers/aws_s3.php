@@ -7,6 +7,9 @@
 */
 if(!class_exists('AWS_S3') ){
 
+//use Aws\S3\S3Client;
+//use Aws\S3\Exception\S3Exception;
+
 class AWS_S3 extends Model {
 
 //===============================================

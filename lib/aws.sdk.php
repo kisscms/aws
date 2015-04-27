@@ -1,6 +1,6 @@
 <?php
 
 // Location of the AWS SDK
-include_once( SDK. "aws/2.5.2/aws-autoloader.php");
+include_once( SDK ."aws/2.8.2/aws.phar");
 
 ?>

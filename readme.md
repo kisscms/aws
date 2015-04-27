@@ -4,8 +4,8 @@ Simple CRUD methods to [AWS](http://aws.amazon.com/) for [KISSCMS](http://kisscm
 
 ## Dependencies
 
-* [AWS PHP SDK v2.5.2](https://github.com/aws/aws-sdk-php/releases/tag/2.5.2)
-* [KISSCMS](https://github.com/makesites/kisscms) >= 2.1.0
+* [AWS PHP SDK v2.8.2](https://github.com/aws/aws-sdk-php/releases/tag/2.8.2)
+* [KISSCMS](https://github.com/makesites/kisscms) >= 2.2.0
 
 ## Install
 
@@ -15,15 +15,16 @@ git submodule install git://github.com/kisscms/aws.git ./app/plugins/aws/
 ```
 In your ```env.json``` you'll need to add where your root SDK folder. The SDK path will be used to include the AWS PHP SDK, which should live in this path:
 ```
-SDK. "aws/[VERSION]/sdk.class.php"
+SDK. "aws/[VERSION]/aws.phar"
 ```
 
 
 ## Usage
 
-Create models using the ```AWS_SimpleDB```
+Create models using the ```SimpleDB``` trait
 ```
-class MyModel extends AWS_SimpleDB {
+class MyModel extends Model {
+	use SimpleDB;
 }
 ```
 
