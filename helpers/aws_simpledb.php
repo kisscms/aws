@@ -7,9 +7,9 @@
 */
 if(!class_exists('AWS_SimpleDB') ){
 
-class AWS_SimpleDB extends Model {
+trait SimpleDB {
 
-	function __construct($db='', $pkname='', $tablename='') {
+	function initSDB() {
 		// optionally set timestamp fields
 		if( !empty( $GLOBALS['config']['aws']['simpleDB_timestamps'] ) ){
 			$this->rs['updated'] = '';
@@ -18,11 +18,25 @@ class AWS_SimpleDB extends Model {
 		if( !empty( $GLOBALS['config']['aws']['simpleDB_soft_delete'] ) ){
 			$this->rs['_archive'] = 0;
 		}
-		$db = $this->getdbh($tablename);
-		parent::__construct( $db, $pkname, $tablename);
+		// generate the name prefix
+		$name = 'sdb_'. $this->tablename; //$this->tablename
+		//precaution...
+		if( !array_key_exists('db', $GLOBALS) ) $GLOBALS['db'] = array();
+		//
+		if ( !isset($GLOBALS['db'][$name]) && isset($GLOBALS['api']['aws']) ) {
+			try {
+				// LEGACY: Instantiate the AmazonSDB class
+				//$GLOBALS['db'][$name] = new AmazonSDB();
+				//$GLOBALS['db'][$name]->set_hostname( $GLOBALS['config']["aws"]["simpleDB_host"] );
+				$GLOBALS['db'][$name] = $GLOBALS['api']['aws']->get('sdb');
+			} catch (Exception $e) {
+				die('Connection failed: '.$e );
+			}
+		}
 
+		$this->db = ( isset($GLOBALS['db'][$name]) ) ? $GLOBALS['db'][$name] : null;
 	}
-
+/*
 //===============================================
 // Database Connection
 //===============================================
@@ -45,7 +59,7 @@ class AWS_SimpleDB extends Model {
 
 		return ( isset($GLOBALS['db'][$name]) ) ? $GLOBALS['db'][$name] : null;
 	}
-
+*/
 
 //===============================================
 // Data methods
@@ -378,5 +392,17 @@ class AWS_SimpleDB extends Model {
 	}
 
 }
+
+class AWS_SimpleDB extends Model {
+	use SimpleDB;
+
+	function __construct($db='', $pkname='', $tablename='') {
+		$this->initSDB();
+		parent::__construct( $this->db, $pkname, $tablename);
+
+	}
 }
+
+}
+
 ?>
