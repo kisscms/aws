@@ -73,9 +73,10 @@ trait SimpleDB {
 
 	// try to re-instate the array variables
 	function get($key) {
-		if( isset($this->rs[$key]) ){
-			$scalar =  $this->rs[$key];
-			$array = json_decode( $scalar );
+		if( isset( $this->rs[$key] ) ){
+			$scalar = $this->rs[$key];
+			// try "decoding" the data
+			$array = ( is_scalar( $scalar ) ) ? json_decode( $scalar ) : $scalar;
 			// #1 FIX : better decoding of db value
 			return ( is_object( $array ) || is_array( $array ) ) ? $array : $scalar;
 		} else {
