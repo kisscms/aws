@@ -383,9 +383,10 @@ trait SimpleDB {
 		// if the value is false save as an integer
 		if( $value === false || $value === 0 ){
 			return 0;
+		} else if( is_array($value) ) {
+			return json_encode($value);
 		} else {
 			// for all other cases simple conversion seems to work
-			// consider json_encode?
 			return (string) $value;
 		}
 
