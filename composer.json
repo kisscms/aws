@@ -1,6 +1,6 @@
 {
 	"name": "kisscms/aws",
-	"version": "3.8.0",
+	"version": "3.8.1",
 	"type": "library",
 	"description": "Amazon Web Services for KISSCMS",
 	"keywords": ["aws","kisscms"],
