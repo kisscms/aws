@@ -91,7 +91,7 @@ trait SimpleDB {
 
 	// Inserts record into database using the primary key
 	// If the primary key is empty, then the PK column should have been set to auto increment
-	function create() {
+	function create( $key, $params=array() ) {
 		// update timestamps
 		if( !empty( $GLOBALS['config']['aws']['simpleDB_timestamps'] ) ){
 			// timestamp() global available at KISSCMS > 2.0
@@ -239,7 +239,7 @@ trait SimpleDB {
 	}
 
 
-	function create_table(){
+	function create_table($name, $fields, $db=false){
 
 		$response = $this->db->create_domain($this->tablename);
 		if ($response->isOK()){
@@ -268,11 +268,11 @@ trait SimpleDB {
 //===============================================
 
 	// General query method
-	function select( $query ){
+	function select( $selectwhat = '*', $wherewhat = '', $bindings = '' ){
 
 		try {
 			$select = $this->db->select( array(
-				"SelectExpression" => $query
+				"SelectExpression" => $selectwhat
 				//'NextToken' => '',
 				//'ConsistentRead' => true || false,
 			));
