@@ -37,7 +37,7 @@ class AWS_S3 extends Model {
 	}
 
 
-	function create($key, $params=array()) {
+	function create($key='', $params=array()) {
 		// trigger the AWS service
 		try{
 			//$response = $this->db->create_object( $this->tablename, $key, $params);

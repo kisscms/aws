@@ -91,7 +91,7 @@ trait SimpleDB {
 
 	// Inserts record into database using the primary key
 	// If the primary key is empty, then the PK column should have been set to auto increment
-	function create( $key, $params=array() ) {
+	function create( $key='', $params=array() ) {
 		// update timestamps
 		if( !empty( $GLOBALS['config']['aws']['simpleDB_timestamps'] ) ){
 			// timestamp() global available at KISSCMS > 2.0
