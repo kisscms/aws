@@ -219,6 +219,37 @@ trait SimpleDB {
 		return $this->getAll();
 	}
 
+	// compine a series of parameters to one query
+	function find($a=false, $b=false){
+		//prerequisites
+		if(!$a) return null;
+		// variables
+		$filter = "";
+		if( is_scalar( $a ) ){
+			$filter = $a;
+		} else {
+			// assume array?
+			$params = $a; // $b isn't currently in use....
+			$filters = array();
+			foreach($params as $key => $value ){
+				$filters[] = ( strpos($value, '%') !== FALSE ) ? $key ." LIKE '". $value ."'" : $key ."='". $value ."'";
+			}
+			$filter = implode(" AND ", $filters);
+		}
+		// execute query
+		$results = $this->query( array(
+			"filters" => $filter
+		));
+		// exit if there're no results
+		if ( empty($results) ) return false;
+		// the result is expected in a one item array
+		// Why not use LIMIT 1 in the query instead?
+		$rs = array_shift( $results );
+
+		$this->merge($rs);
+
+		return $this->getAll();
+	}
 
 //===============================================
 // Table functions
