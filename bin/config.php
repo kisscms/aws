@@ -1,7 +1,7 @@
 <?php
 
 // AWS SDK namespace
-use Aws\Common\Aws;
+use Aws\Sdk;
 
 //===============================================
 // Configuration
@@ -24,7 +24,7 @@ if( !array_key_exists("api", $GLOBALS) ) $GLOBALS['api'] = array();
 	if( !isset($GLOBALS['api']['aws']) ){
 
 		try{
-			$GLOBALS['api']['aws'] = Aws::factory(array(
+			$GLOBALS['api']['aws'] = new Aws\Sdk(array(
 				'key'    => $GLOBALS['config']['aws']['key'],
 				'secret' => $GLOBALS['config']['aws']['secret'],
 				'region' => $GLOBALS['config']['aws']['region'],

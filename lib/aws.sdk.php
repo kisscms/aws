@@ -1,6 +1,6 @@
 <?php
 
 // Location of the AWS SDK
-require( SDK ."aws/2.8.2/aws.phar");
+require_once( SDK ."aws/3.165.0/aws.phar");
 
 ?>
