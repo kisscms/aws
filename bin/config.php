@@ -7,7 +7,7 @@ use Aws\Sdk;
 // Configuration
 //===============================================
 
-if( class_exists('Config') && method_exists(new Config(),'register')){
+if( class_exists('Config') && method_exists('Config','register')){
 
 	// Register variables
 	Config::register("aws", "key", 			"01234567890");
@@ -18,7 +18,7 @@ if( class_exists('Config') && method_exists(new Config(),'register')){
 	Config::register("aws", "simpleDB_soft_delete", "1");
 	Config::register("aws", "s3_region", "s3.amazonaws.com");
 
-if( !array_key_exists("api", $GLOBALS) ) $GLOBALS['api'] = array();
+	if( !array_key_exists("api", $GLOBALS) ) $GLOBALS['api'] = array();
 
 	// setup AWS (only once)
 	if( !isset($GLOBALS['api']['aws']) ){
@@ -31,6 +31,7 @@ if( !array_key_exists("api", $GLOBALS) ) $GLOBALS['api'] = array();
 			));
 		} catch( Exception $e ) {
 			// output error...
+			//echo 'Caught exception: ',  $e->getMessage(), "\n";
 		}
 	}
 }
